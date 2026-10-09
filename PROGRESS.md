@@ -59,6 +59,13 @@
 - Source inspection explains the hex result: `MagicAttributes` asks `/usr/bin/file --mime --brief` to classify the extensionless cache blob. When that reports a non-text MIME, `SCSHBaseXPCService` uses `/usr/bin/xxd` when the “dump plain data” preference is enabled. The blob has a binary cache header with embedded URL/SVG content, so enabling the broad `public.data` UTI routes it to the extension but does not decode the cache record.
 - Making such records display as source would require format-aware cache parsing or another explicit user-selected handling rule; changing the generic `public.data` UTI alone cannot safely turn all extensionless Electron storage into text.
 
+## 2026-10-09 extensionless Electron text preview follow-up
+
+- A real extensionless VS Code `Preferences` file is reported by `/usr/bin/file` as `application/json; charset=us-ascii` and by Spotlight as `public.data`. The installed Quick Look extension correctly detected `public.json` and selected JSON syntax, but its preview failed before rendering.
+- The captured Quick Look log showed `mktemp: too few X's in template 'colorize'`. The user's `PATH` resolves `mktemp` to Homebrew GNU Coreutils, while `Application/resources/colorize.sh` used macOS BSD syntax (`mktemp -t colorize`).
+- Changed the script to call `/usr/bin/mktemp -t colorize` explicitly. Running the patched source script against the same extensionless JSON file with the real Homebrew-first `PATH` succeeded, created its size-limiting temporary file, logged `Success.`, emitted 10 syntax-highlight spans, and contained no footer markers.
+- This validates the patched script path but does not replace the installed app: a rebuilt and reinstalled app is still required to verify the fix in the actual Quick Look XPC. The local machine lacks full Xcode, and the fork's Actions job is still stopped by the GitHub billing lock.
+
 ## Remaining verification
 
-- Re-run the workflow on the user's fork after GitHub removes the account billing lock; the workflow was pushed and is enabled, but the runner refuses to start until the account state changes.
+- Re-run the workflow on the user's fork after GitHub removes the account billing lock, download/reinstall the artifact, and confirm the extensionless JSON preview succeeds in Quick Look. The workflow was pushed and is enabled, but the runner refuses to start until the account state changes.

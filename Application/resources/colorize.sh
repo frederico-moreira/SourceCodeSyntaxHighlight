@@ -163,7 +163,10 @@ go4it () {
     
     if [ -n "${maxFileSizeHL}" ]; then
         # create a temporary file
-        tmpfile=$(mktemp -t colorize)
+        # Quick Look inherits the user's PATH. Homebrew coreutils can place GNU
+        # mktemp ahead of macOS's BSD mktemp, where `-t colorize` has different
+        # syntax. Use the system implementation explicitly for this macOS app.
+        tmpfile=$(/usr/bin/mktemp -t colorize)
         debug "Save reader output to a temporary file: $tmpfile"
         debug "\$ ${reader} \> \"$tmpfile\""
         
