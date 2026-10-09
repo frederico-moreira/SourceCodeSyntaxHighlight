@@ -31,8 +31,16 @@
 - Rendered a synthetic 10 MiB extensionless file with the installed CLI and no per-render overrides. The output was 8,390,629 bytes, the sentinel beyond the 8 MiB boundary was absent, and no footer markers appeared. This confirms the saved 8 MiB limit is active.
 - After `qlmanage -r`, `qlmanage -p -x` on the real extensionless CacheStorage blob started `/Applications/Syntax Highlight.app`'s Quick Look extension and `Syntax Highlight XPC Render` child. The preview contents could not be visually inspected in this session, so this confirms dispatch/render process activation rather than pixel-level output.
 - A full Xcode installation is unavailable (`xcode-select -p` points to Command Line Tools; Xcodes.app is present but no installed `xcodebuild` was found). The temporary source-level fallback changes were discarded; the installed app remains unchanged.
-- GitHub Actions run details are recorded in the workspace-level `PROGRESS.md`, but a live recheck remains unavailable because `gh auth status` reports invalid stored credentials and the API request failed to connect.
+- The user's public fork is `frederico-moreira/SourceCodeSyntaxHighlight`; its `master` is at `3cfdf1a`. The fork run `37989503375` is a failure with zero job steps, so it did not compile anything. A push retry was denied because Git used the `hypervanse` credential, which has no write access to the user's fork. The build logs and app artifact endpoints also require authentication (HTTP 403/401).
+
+## 2026-10-09 GitHub Actions build verification
+
+- Public Actions metadata for [run 37986980064](https://github.com/hypervanse/SourceCodeSyntaxHighlight/actions/runs/37986980064) shows all nine job steps succeeded, including `Build Application` and `Upload app`; GitHub lists a non-expired `Syntax-Highlight-app` artifact of 18,789,093 bytes. This run belongs to the separate public `hypervanse` fork, not the user's fork.
+- The successful run's commit `7fec02a` has the same `.github/workflows/build.yml`, app source files, and `highlight-wrapper/highlight` submodule commit (`609438f`) as the user's workflow commit `3cfdf1a`. The tree differences are the `AGENTS.md` documentation and Unicode normalization of three `dos2unix/test` filenames. The successful workflow uses the ad-hoc signing settings present locally: `CODE_SIGN_IDENTITY="-"`, manual signing, empty team, signing required off, and signing allowed on.
+- The successful run used `runs-on: macos-latest`; the current [official runner-image mapping](https://github.com/actions/runner-images#available-images) maps `macos-latest` to the arm64 macOS 26 image. The job logs endpoint denied anonymous access, so the run's recorded `uname -m` and exact Xcode/OS output could not be retrieved.
+- The local Mac still has only Command Line Tools and 1.3 GiB free, so a local Xcode build is not currently available. The artifact download returned HTTP 401 without an authenticated GitHub session.
 
 ## Remaining verification
 
 - Visually inspect the open Quick Look preview for the real extensionless Code CacheStorage file and, if useful, comparable plist and XML previews.
+- Trigger and verify a build on the user's fork after GitHub credentials have write access to `frederico-moreira/SourceCodeSyntaxHighlight`, or use the identical successful public-fork artifact after authenticated download.
