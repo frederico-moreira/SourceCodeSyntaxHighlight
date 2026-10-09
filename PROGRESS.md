@@ -41,6 +41,14 @@
 - The successful run used `runs-on: macos-latest`; the current [official runner-image mapping](https://github.com/actions/runner-images#available-images) maps `macos-latest` to the arm64 macOS 26 image. The job logs endpoint denied anonymous access, so the run's recorded `uname -m` and exact Xcode/OS output could not be retrieved.
 - The local Mac still has only Command Line Tools and 1.3 GiB free, so a local Xcode build is not currently available. The artifact download returned HTTP 401 without an authenticated GitHub session.
 
+## 2026-10-09 M1 size-cap correction
+
+- Re-read the workspace-level `AGENTS.md`: it specifies about 1 MiB for the M1 and says 2–7 MiB Electron cache blobs should be handled gracefully. The host reports `Apple M1`, `arm64`, and 8 GiB (`hw.memsize=8589934592`), so the earlier 8 MiB preference was too high for the stated machine guidance.
+- Corrected the current saved preference to `about=false` and `max-data=1048576`, restarted the user's `cfprefsd`, and refreshed Quick Look. The earlier 8 MiB setting and tests above are historical; 1 MiB is now active.
+- A synthetic 2 MiB extensionless `public.data` file rendered with no CLI overrides to 1,050,594 bytes; its tail sentinel was omitted and no footer markers appeared.
+- A real 3,181,687-byte extensionless Code CacheStorage blob (`public.data`) rendered by default to 4,522,843 bytes. That output is byte-for-byte identical to the same file rendered with explicit `--max-data 1048576`, and contains no footer markers. The larger RTF size reflects formatting expansion of binary input; the source input cap is 1 MiB.
+- `qlmanage -p -x` on that real 3.18 MiB blob started the installed Quick Look extension and `Syntax Highlight XPC Render` after the 1 MiB cap was saved. The preview remains open; its visual contents are still not inspectable in this session.
+
 ## Remaining verification
 
 - Visually inspect the open Quick Look preview for the real extensionless Code CacheStorage file and, if useful, comparable plist and XML previews.
