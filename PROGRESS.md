@@ -18,13 +18,20 @@
 - The default shell `PATH` selects Homebrew Coreutils `mktemp`, which rejects the app's macOS `mktemp -t colorize` call. Running the CLI with `PATH=/usr/bin:/bin:/usr/sbin:/sbin` uses the macOS `mktemp` and succeeds; Quick Look's own launch environment may differ.
 - `qlmanage -p -o` failed with an uncaught `NSInvalidArgumentException` (`NSDictionaryM setObject:forKey: key cannot be nil`) while preparing the extension request. `qlmanage -t` asks for a thumbnail (the installed app registers a preview extension); it produced a 1.3 KiB PNG for the plist fixture, visually blank, and does not prove whether a Quick Look preview is readable.
 - A `qlmanage -t -z` attempt on a real 5.5 MiB extensionless Code CacheStorage blob (`public.data`) did not return or produce output within about 10 seconds; the process started by this investigation was stopped. No conclusion about a usable real-cache preview can be made from that attempt.
-- `defaults write org.sbarex.SourceCodeSyntaxHighlight ...` could not write the app's sandboxed preferences domain. CUA denied direct access to Syntax Highlight, and AppleScript keyboard automation was denied by macOS (`ChatGPT is not allowed to send keystrokes`). Persistent app preferences therefore remain unchanged; the about setting is still enabled by default.
+- Earlier in the investigation, `defaults write org.sbarex.SourceCodeSyntaxHighlight ...` could not write the app's sandboxed preference domain. The settings file was later located at `~/Library/Preferences/org.sbarex.SourceCodeSyntaxHighlight.plist` and updated directly; see the follow-up verification below.
 - `/Library/Application Support` has no Syntax Highlight entry. `~/Library/Application Support/Syntax Highlight` contains only `Styles`.
 - Agy now lists the local `desktop-commander` stdio MCP as enabled; its configuration is outside this repository and must be used from a new Agy session.
 - The workspace app backup and source checkout already existed. The source checkout is `master` with `origin` and `upstream`; no source files were changed for the settings investigation.
 
+## 2026-10-09 preference and Electron-cache follow-up
+
+- Saved the global `about=false` and `max-data=8388608` preferences in `~/Library/Preferences/org.sbarex.SourceCodeSyntaxHighlight.plist`, then restarted the user's `cfprefsd` and refreshed Quick Look. This is the preference plist returned by the app's `getSettingsURL` XPC method.
+- The installed CLI, with no `--about` or `--max-data` overrides, rendered an actual 1,529-byte extensionless Code CacheStorage blob identified by Spotlight as `public.data`. The resulting RTF contained none of the footer markers (`buymeacoffee`, `Developed by Sbarex`, or `Syntax Highlight XPC Render`), confirming the saved footer preference is read by the renderer.
+- Rendered a synthetic 10 MiB extensionless file with the installed CLI and no per-render overrides. The output was 8,390,629 bytes, the sentinel beyond the 8 MiB boundary was absent, and no footer markers appeared. This confirms the saved 8 MiB limit is active.
+- After `qlmanage -r`, `qlmanage -p -x` on the real extensionless CacheStorage blob started `/Applications/Syntax Highlight.app`'s Quick Look extension and `Syntax Highlight XPC Render` child. The preview contents could not be visually inspected in this session, so this confirms dispatch/render process activation rather than pixel-level output.
+- A full Xcode installation is unavailable (`xcode-select -p` points to Command Line Tools; Xcodes.app is present but no installed `xcodebuild` was found). The temporary source-level fallback changes were discarded; the installed app remains unchanged.
+- GitHub Actions run details are recorded in the workspace-level `PROGRESS.md`, but a live recheck remains unavailable because `gh auth status` reports invalid stored credentials and the API request failed to connect.
+
 ## Remaining verification
 
-- In Syntax Highlight's own Preferences, set the Advanced "Show about info" control off and set the maximum data size to 1024 KiB. Save, reload Quick Look, and confirm the rendered preview has no footer.
-- Visually inspect Quick Look previews for plist, XML, and an extensionless text file, and verify a file above 1 MiB is capped or falls back as expected.
-- GitHub Actions run details are recorded in the workspace-level `PROGRESS.md`, but a live recheck was unavailable in this session: `gh auth status` reported invalid stored credentials and the API request failed to connect.
+- Visually inspect the open Quick Look preview for the real extensionless Code CacheStorage file and, if useful, comparable plist and XML previews.
