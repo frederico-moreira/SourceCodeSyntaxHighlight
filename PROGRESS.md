@@ -49,10 +49,16 @@
 - Corrected the current saved preference to `about=false` and `max-data=1048576`, restarted the user's `cfprefsd`, and refreshed Quick Look. The earlier 8 MiB setting and tests above are historical; 1 MiB is now active.
 - A synthetic 2 MiB extensionless `public.data` file rendered with no CLI overrides to 1,050,594 bytes; its tail sentinel was omitted and no footer markers appeared.
 - A real 3,181,687-byte extensionless Code CacheStorage blob (`public.data`) rendered by default to 4,522,843 bytes. That output is byte-for-byte identical to the same file rendered with explicit `--max-data 1048576`, and contains no footer markers. The larger RTF size reflects formatting expansion of binary input; the source input cap is 1 MiB.
-- `qlmanage -p -x` on that real 3.18 MiB blob started the installed Quick Look extension and `Syntax Highlight XPC Render` after the 1 MiB cap was saved. The preview remains open; its visual contents are still not inspectable in this session.
+- `qlmanage -p -x` on that real 3.18 MiB blob started the installed Quick Look extension and `Syntax Highlight XPC Render` after the 1 MiB cap was saved. The visual result is recorded in the follow-up below.
 - Source-path check: `QLExtension/PreviewViewController.swift` sends previews to `org.sbarex.SourceCodeSyntaxHighlight.XPCRender`; `SCSHBaseXPCService.initSettings()` loads the same `org.sbarex.SourceCodeSyntaxHighlight` defaults domain through `UserDefaults.standard`, and `Settings+Service.swift` reads that persistent domain. The render XPC has the shared app-group entitlement but no app-sandbox entitlement. The companion settings XPC's `getSettingsURL()` in `SCSHXPCService.swift` returns the user Library Preferences location. This ties the edited plist to the preview service, beyond the CLI-only check.
+
+## 2026-10-09 visual Quick Look verification
+
+- After Screen Recording permission was granted, captured only the already-open `qlmanage` preview window for the real extensionless Code CacheStorage blob. The installed Quick Look extension visibly rendered it as `application/octet-stream` with a hexadecimal/ASCII dump; it did not display the embedded SVG bytes as rendered source.
+- No Syntax Highlight footer or attribution was visible in the captured preview. This confirms the no-footer setting in the actual Quick Look window, beyond CLI output checks.
+- Source inspection explains the hex result: `MagicAttributes` asks `/usr/bin/file --mime --brief` to classify the extensionless cache blob. When that reports a non-text MIME, `SCSHBaseXPCService` uses `/usr/bin/xxd` when the “dump plain data” preference is enabled. The blob has a binary cache header with embedded URL/SVG content, so enabling the broad `public.data` UTI routes it to the extension but does not decode the cache record.
+- Making such records display as source would require format-aware cache parsing or another explicit user-selected handling rule; changing the generic `public.data` UTI alone cannot safely turn all extensionless Electron storage into text.
 
 ## Remaining verification
 
-- Visually inspect the open Quick Look preview for the real extensionless Code CacheStorage file and, if useful, comparable plist and XML previews.
 - Re-run the workflow on the user's fork after GitHub removes the account billing lock; the workflow was pushed and is enabled, but the runner refuses to start until the account state changes.
