@@ -1,0 +1,51 @@
+name: Build Syntax Highlight
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Environment info
+        run: |
+          uname -m
+          sw_vers
+          xcodebuild -version
+          xcodebuild -list -project SourceCodeSyntaxHighlight.xcodeproj
+
+      - name: Resolve Swift packages
+        run: xcodebuild -resolvePackageDependencies -project SourceCodeSyntaxHighlight.xcodeproj -scheme SyntaxHighlight
+
+      - name: Build Application
+        run: |
+          xcodebuild clean build \
+            -project SourceCodeSyntaxHighlight.xcodeproj \
+            -scheme SyntaxHighlight \
+            -configuration Release \
+            -destination 'generic/platform=macOS' \
+            -derivedDataPath build \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=YES
+
+      - name: Upload app
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Syntax-Highlight-app
+          path: build/Build/Products/Release/Syntax Highlight.app
