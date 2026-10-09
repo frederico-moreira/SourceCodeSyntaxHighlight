@@ -48,6 +48,7 @@
 - A synthetic 2 MiB extensionless `public.data` file rendered with no CLI overrides to 1,050,594 bytes; its tail sentinel was omitted and no footer markers appeared.
 - A real 3,181,687-byte extensionless Code CacheStorage blob (`public.data`) rendered by default to 4,522,843 bytes. That output is byte-for-byte identical to the same file rendered with explicit `--max-data 1048576`, and contains no footer markers. The larger RTF size reflects formatting expansion of binary input; the source input cap is 1 MiB.
 - `qlmanage -p -x` on that real 3.18 MiB blob started the installed Quick Look extension and `Syntax Highlight XPC Render` after the 1 MiB cap was saved. The preview remains open; its visual contents are still not inspectable in this session.
+- Source-path check: `QLExtension/PreviewViewController.swift` sends previews to `org.sbarex.SourceCodeSyntaxHighlight.XPCRender`; `SCSHBaseXPCService.initSettings()` loads the same `org.sbarex.SourceCodeSyntaxHighlight` defaults domain through `UserDefaults.standard`, and `Settings+Service.swift` reads that persistent domain. The render XPC has the shared app-group entitlement but no app-sandbox entitlement. The companion settings XPC's `getSettingsURL()` in `SCSHXPCService.swift` returns the user Library Preferences location. This ties the edited plist to the preview service, beyond the CLI-only check.
 
 ## Remaining verification
 
